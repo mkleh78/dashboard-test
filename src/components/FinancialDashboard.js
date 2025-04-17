@@ -180,23 +180,24 @@ const FinanzkompassDashboard = () => {
     // 9. Calculate Vermögensanlage Score
     // Calculate total investment amount
     const totalInvestment = 
-      (vermoegenAnlage.aktienEtfs ? vermoegenAnlage.aktienEtfsBetrag : 0) +
-      (vermoegenAnlage.immobilien ? vermoegenAnlage.immobilienBetrag : 0) +
-      (vermoegenAnlage.anleihen ? vermoegenAnlage.anleihenBetrag : 0) +
-      (vermoegenAnlage.versicherungen ? vermoegenAnlage.versicherungenBetrag : 0) +
-      (vermoegenAnlage.bankeinlagen ? vermoegenAnlage.bankeinlagenBetrag : 0);
+      (vermoegenAnlage.aktienEtfs ? vermoegenAnlage.aktienEtfsBetrag || 0 : 0) +
+      (vermoegenAnlage.immobilien ? vermoegenAnlage.immobilienBetrag || 0 : 0) +
+      (vermoegenAnlage.anleihen ? vermoegenAnlage.anleihenBetrag || 0 : 0) +
+      (vermoegenAnlage.versicherungen ? vermoegenAnlage.versicherungenBetrag || 0 : 0) +
+      (vermoegenAnlage.bankeinlagen ? vermoegenAnlage.bankeinlagenBetrag || 0 : 0);
     
-    // Only count asset classes with at least 10% of total investment
+    // Count asset classes with at least 10% of total investment
+    // If totalInvestment is 0 but checkbox is checked, count it anyway to give feedback
     let vermoegensanlageGesamteinfluss = 0;
-    if (vermoegenAnlage.aktienEtfs && totalInvestment > 0 && (vermoegenAnlage.aktienEtfsBetrag / totalInvestment) >= 0.1) 
+    if (vermoegenAnlage.aktienEtfs && (totalInvestment === 0 || (vermoegenAnlage.aktienEtfsBetrag / totalInvestment) >= 0.1)) 
       vermoegensanlageGesamteinfluss += 60;
-    if (vermoegenAnlage.immobilien && totalInvestment > 0 && (vermoegenAnlage.immobilienBetrag / totalInvestment) >= 0.1) 
+    if (vermoegenAnlage.immobilien && (totalInvestment === 0 || (vermoegenAnlage.immobilienBetrag / totalInvestment) >= 0.1)) 
       vermoegensanlageGesamteinfluss += 40;
-    if (vermoegenAnlage.anleihen && totalInvestment > 0 && (vermoegenAnlage.anleihenBetrag / totalInvestment) >= 0.1) 
+    if (vermoegenAnlage.anleihen && (totalInvestment === 0 || (vermoegenAnlage.anleihenBetrag / totalInvestment) >= 0.1)) 
       vermoegensanlageGesamteinfluss += 25;
-    if (vermoegenAnlage.versicherungen && totalInvestment > 0 && (vermoegenAnlage.versicherungenBetrag / totalInvestment) >= 0.1) 
+    if (vermoegenAnlage.versicherungen && (totalInvestment === 0 || (vermoegenAnlage.versicherungenBetrag / totalInvestment) >= 0.1)) 
       vermoegensanlageGesamteinfluss += 15;
-    if (vermoegenAnlage.bankeinlagen && totalInvestment > 0 && (vermoegenAnlage.bankeinlagenBetrag / totalInvestment) >= 0.1) 
+    if (vermoegenAnlage.bankeinlagen && (totalInvestment === 0 || (vermoegenAnlage.bankeinlagenBetrag / totalInvestment) >= 0.1)) 
       vermoegensanlageGesamteinfluss += 15;
     
     const vermoegensanlageScore = (vermoegensanlageGesamteinfluss / 155) * 100;
@@ -378,6 +379,9 @@ const FinanzkompassDashboard = () => {
   const handleInputChange = (e, section, subsection) => {
     const { name, value, type, checked } = e.target;
     
+    // Convert value to number or use 0 if empty for number fields
+    const numValue = type === 'number' ? (value === '' ? 0 : Number(value)) : value;
+    
     if (section) {
       if (subsection) {
         // Handle nested subsection (like versicherungen.krankenversicherung)
@@ -387,7 +391,7 @@ const FinanzkompassDashboard = () => {
             ...prev[section],
             [subsection]: {
               ...prev[section][subsection],
-              [name]: type === 'checkbox' ? checked : Number(value)
+              [name]: type === 'checkbox' ? checked : numValue
             }
           }
         }));
@@ -397,7 +401,7 @@ const FinanzkompassDashboard = () => {
           ...prev,
           [section]: {
             ...prev[section],
-            [name]: type === 'checkbox' ? checked : Number(value)
+            [name]: type === 'checkbox' ? checked : numValue
           }
         }));
       }
@@ -405,19 +409,64 @@ const FinanzkompassDashboard = () => {
       // Handle top-level property
       setFormData(prev => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : Number(value)
+        [name]: type === 'checkbox' ? checked : numValue
       }));
+    }
+    
+    // Special handling: if unchecking an investment type, reset its amount to 0
+    if (type === 'checkbox' && !checked && section === 'vermoegenAnlage') {
+      if (name === 'aktienEtfs') {
+        setFormData(prev => ({
+          ...prev,
+          vermoegenAnlage: {
+            ...prev.vermoegenAnlage,
+            aktienEtfsBetrag: 0
+          }
+        }));
+      } else if (name === 'immobilien') {
+        setFormData(prev => ({
+          ...prev,
+          vermoegenAnlage: {
+            ...prev.vermoegenAnlage,
+            immobilienBetrag: 0
+          }
+        }));
+      } else if (name === 'anleihen') {
+        setFormData(prev => ({
+          ...prev,
+          vermoegenAnlage: {
+            ...prev.vermoegenAnlage,
+            anleihenBetrag: 0
+          }
+        }));
+      } else if (name === 'versicherungen') {
+        setFormData(prev => ({
+          ...prev,
+          vermoegenAnlage: {
+            ...prev.vermoegenAnlage,
+            versicherungenBetrag: 0
+          }
+        }));
+      } else if (name === 'bankeinlagen') {
+        setFormData(prev => ({
+          ...prev,
+          vermoegenAnlage: {
+            ...prev.vermoegenAnlage,
+            bankeinlagenBetrag: 0
+          }
+        }));
+      }
     }
   };
   
   return (
-    <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-6 min-h-screen">
-      <header className="mb-8 relative">
-        <div className="flex justify-between items-center">
-          <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+    <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white p-3 sm:p-6 min-h-screen">
+      <header className="mb-6 sm:mb-8 relative">
+        <div className="flex justify-between items-start">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
             Financial Wellbeing Dashboard
           </h1>
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <img src={rolandBergerLogo} alt="Roland Berger" className="h-6 sm:h-10" />
             <img src={hoftLogo} alt="HoFT" className="h-6 sm:h-10" />
           </div>
@@ -426,12 +475,12 @@ const FinanzkompassDashboard = () => {
       </header>
       
       {/* REORDERED: Data Entry Form moved to the top */}
-      <div className="mb-8 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
-        <h2 className="text-xl font-semibold mb-4">Daten aktualisieren</h2>
+      <div className="mb-6 sm:mb-8 bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
+        <h2 className="text-lg sm:text-xl font-semibold mb-4">Daten aktualisieren</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Financial Basis Inputs */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-700">
             <h3 className="font-medium text-blue-400">Finanzielle Basis</h3>
             
             <div>
@@ -677,6 +726,8 @@ const FinanzkompassDashboard = () => {
                       onChange={(e) => handleInputChange(e, 'vermoegenAnlage')}
                       className="bg-gray-700 rounded px-3 py-1 text-white text-sm w-full md:w-3/4"
                       placeholder="Betrag in €"
+                      min="0"
+                      required
                     />
                   </div>
                 )}
@@ -702,6 +753,8 @@ const FinanzkompassDashboard = () => {
                       onChange={(e) => handleInputChange(e, 'vermoegenAnlage')}
                       className="bg-gray-700 rounded px-3 py-1 text-white text-sm w-full md:w-3/4"
                       placeholder="Betrag in €"
+                      min="0"
+                      required
                     />
                   </div>
                 )}
@@ -727,6 +780,8 @@ const FinanzkompassDashboard = () => {
                       onChange={(e) => handleInputChange(e, 'vermoegenAnlage')}
                       className="bg-gray-700 rounded px-3 py-1 text-white text-sm w-full md:w-3/4"
                       placeholder="Betrag in €"
+                      min="0"
+                      required
                     />
                   </div>
                 )}
@@ -752,6 +807,8 @@ const FinanzkompassDashboard = () => {
                       onChange={(e) => handleInputChange(e, 'vermoegenAnlage')}
                       className="bg-gray-700 rounded px-3 py-1 text-white text-sm w-full md:w-3/4"
                       placeholder="Betrag in €"
+                      min="0"
+                      required
                     />
                   </div>
                 )}
@@ -777,6 +834,8 @@ const FinanzkompassDashboard = () => {
                       onChange={(e) => handleInputChange(e, 'vermoegenAnlage')}
                       className="bg-gray-700 rounded px-3 py-1 text-white text-sm w-full md:w-3/4"
                       placeholder="Betrag in €"
+                      min="0"
+                      required
                     />
                   </div>
                 )}
