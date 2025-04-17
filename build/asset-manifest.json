@@ -1,0 +1,17 @@
+{
+  "files": {
+    "main.css": "/static/css/main.16e00f42.css",
+    "main.js": "/static/js/main.212cbcff.js",
+    "static/js/453.eb8e8820.chunk.js": "/static/js/453.eb8e8820.chunk.js",
+    "static/media/roland-berger-logo.png": "/static/media/roland-berger-logo.88118f7ffa150a485bc8.png",
+    "static/media/hoft-logo.png": "/static/media/hoft-logo.3b9aed6ba50f22f41384.png",
+    "index.html": "/index.html",
+    "main.16e00f42.css.map": "/static/css/main.16e00f42.css.map",
+    "main.212cbcff.js.map": "/static/js/main.212cbcff.js.map",
+    "453.eb8e8820.chunk.js.map": "/static/js/453.eb8e8820.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.16e00f42.css",
+    "static/js/main.212cbcff.js"
+  ]
+}
