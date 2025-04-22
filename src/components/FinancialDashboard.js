@@ -189,8 +189,8 @@ const FinanzkompassDashboard = () => {
       0.2 * notfallordnerScore
     );
     
-    // 9. Calculate Vermögensanlage Score
-    // Calculate total investment amount
+    // 9. Calculate Vermögensanlage Score - IMPROVED LOGIC
+    // Calculate total investment
     const totalInvestment = 
       (vermoegenAnlage.aktienEtfs ? vermoegenAnlage.aktienEtfsBetrag || 0 : 0) +
       (vermoegenAnlage.immobilien ? vermoegenAnlage.immobilienBetrag || 0 : 0) +
@@ -198,21 +198,85 @@ const FinanzkompassDashboard = () => {
       (vermoegenAnlage.versicherungen ? vermoegenAnlage.versicherungenBetrag || 0 : 0) +
       (vermoegenAnlage.bankeinlagen ? vermoegenAnlage.bankeinlagenBetrag || 0 : 0);
     
-    // Count asset classes with at least 10% of total investment
-    // If totalInvestment is 0 but checkbox is checked, count it anyway to give feedback
-    let vermoegensanlageGesamteinfluss = 0;
-    if (vermoegenAnlage.aktienEtfs && (totalInvestment === 0 || (vermoegenAnlage.aktienEtfsBetrag / totalInvestment) >= 0.1)) 
-      vermoegensanlageGesamteinfluss += 60;
-    if (vermoegenAnlage.immobilien && (totalInvestment === 0 || (vermoegenAnlage.immobilienBetrag / totalInvestment) >= 0.1)) 
-      vermoegensanlageGesamteinfluss += 40;
-    if (vermoegenAnlage.anleihen && (totalInvestment === 0 || (vermoegenAnlage.anleihenBetrag / totalInvestment) >= 0.1)) 
-      vermoegensanlageGesamteinfluss += 25;
-    if (vermoegenAnlage.versicherungen && (totalInvestment === 0 || (vermoegenAnlage.versicherungenBetrag / totalInvestment) >= 0.1)) 
-      vermoegensanlageGesamteinfluss += 15;
-    if (vermoegenAnlage.bankeinlagen && (totalInvestment === 0 || (vermoegenAnlage.bankeinlagenBetrag / totalInvestment) >= 0.1)) 
-      vermoegensanlageGesamteinfluss += 15;
+    // Calculate percentages for each asset class
+    const percentages = totalInvestment === 0 ? null : {
+      aktienEtfs: (vermoegenAnlage.aktienEtfs ? vermoegenAnlage.aktienEtfsBetrag || 0 : 0) / totalInvestment,
+      immobilien: (vermoegenAnlage.immobilien ? vermoegenAnlage.immobilienBetrag || 0 : 0) / totalInvestment,
+      anleihen: (vermoegenAnlage.anleihen ? vermoegenAnlage.anleihenBetrag || 0 : 0) / totalInvestment,
+      versicherungen: (vermoegenAnlage.versicherungen ? vermoegenAnlage.versicherungenBetrag || 0 : 0) / totalInvestment,
+      bankeinlagen: (vermoegenAnlage.bankeinlagen ? vermoegenAnlage.bankeinlagenBetrag || 0 : 0) / totalInvestment
+    };
     
-    const vermoegensanlageScore = (vermoegensanlageGesamteinfluss / 155) * 100;
+    // Base scores for each asset class
+    const baseScores = {
+      aktienEtfs: 60,
+      immobilien: 40,
+      anleihen: 25,
+      versicherungen: 15,
+      bankeinlagen: 15
+    };
+    
+    // Calculate weighted score based on actual percentages
+    let weightedScore = 0;
+    if (percentages) {
+      Object.keys(percentages).forEach(assetClass => {
+        if (percentages[assetClass] > 0) {
+          weightedScore += baseScores[assetClass] * percentages[assetClass];
+        }
+      });
+    } else {
+      // If no investments, check which types are selected and add a basic score
+      if (vermoegenAnlage.aktienEtfs) weightedScore += baseScores.aktienEtfs * 0.1;
+      if (vermoegenAnlage.immobilien) weightedScore += baseScores.immobilien * 0.1;
+      if (vermoegenAnlage.anleihen) weightedScore += baseScores.anleihen * 0.1;
+      if (vermoegenAnlage.versicherungen) weightedScore += baseScores.versicherungen * 0.1;
+      if (vermoegenAnlage.bankeinlagen) weightedScore += baseScores.bankeinlagen * 0.1;
+    }
+    
+    // Calculate concentration penalty
+    let concentrationPenalty = 0;
+    if (percentages) {
+      Object.keys(percentages).forEach(assetClass => {
+        if (percentages[assetClass] > 0.7) {
+          concentrationPenalty += (percentages[assetClass] - 0.7) * 30; // Up to 9% penalty for 100% concentration
+        }
+      });
+    }
+    
+    // Calculate diversification bonus
+    let diversificationBonus = 0;
+    if (percentages) {
+      const diversifiedClasses = Object.keys(percentages).filter(assetClass => 
+        percentages[assetClass] >= 0.1
+      ).length;
+      
+      diversificationBonus = Math.min(diversifiedClasses * 5, 20); // Up to 20% bonus for having all 5 asset classes
+    } else {
+      // Count selected asset classes if no investments yet
+      let selectedCount = 0;
+      if (vermoegenAnlage.aktienEtfs) selectedCount++;
+      if (vermoegenAnlage.immobilien) selectedCount++;
+      if (vermoegenAnlage.anleihen) selectedCount++;
+      if (vermoegenAnlage.versicherungen) selectedCount++;
+      if (vermoegenAnlage.bankeinlagen) selectedCount++;
+      
+      diversificationBonus = Math.min(selectedCount * 3, 15); // Up to 15% bonus for selection
+    }
+    
+    // Investment adequacy relative to income/expenses
+    const monthlyExpenses = fixeKosten + variableKosten;
+    const investmentTarget = monthlyExpenses * 12; // 1 year of expenses
+    let adequacyBonus = 0;
+    
+    if (totalInvestment > 0) {
+      adequacyBonus = Math.min(totalInvestment / investmentTarget * 15, 15); // Up to 15% bonus
+    }
+    
+    // Calculate final score with all components
+    const rawScore = weightedScore - concentrationPenalty + diversificationBonus + adequacyBonus;
+    
+    // Normalize to 0-100 scale
+    const vermoegensanlageScore = Math.min(Math.max(rawScore, 0), 100);
     
     // 10. Calculate Altersvorsorge Score
     const altersvorsorgeAnsprueche = altersvorsorge.gesetzlicheRente + altersvorsorge.betrieblicheRente + altersvorsorge.privateRente;
@@ -1018,6 +1082,7 @@ const FinanzkompassDashboard = () => {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#333', border: 'none' }}
                   formatter={(value) => [`${Math.round(value)}%`, 'Score']}
+                  labelStyle={{ color: '#fff' }}
                 />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {detailData.map((entry, index) => (
@@ -1064,7 +1129,7 @@ const FinanzkompassDashboard = () => {
       </div>
       
       <footer className="mt-6 sm:mt-8 text-center text-gray-400 text-xs sm:text-sm">
-        <p>© 2025 Financial Wellbeing Dashboard</p>
+        <p>© 2025 House of Finance & Tech // entwickelt von Markus Lehleiter</p>
       </footer>
     </div>
   );
