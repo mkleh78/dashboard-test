@@ -102,6 +102,18 @@ const FinanzkompassDashboard = () => {
     setScores(calculatedScores);
   }, [formData]);
   
+  // Set document title and favicon
+  useEffect(() => {
+    document.title = "Financial Wellbeing Dashboard";
+    
+    // Create link element for favicon
+    const link = document.querySelector("link[rel~='icon']") || document.createElement('link');
+    link.type = 'image/jpeg';
+    link.rel = 'icon';
+    link.href = 'Icon.jpg';
+    document.head.appendChild(link);
+  }, []);
+  
   // Helper function to calculate all scores
   const calculateScores = (data) => {
     // Extract data
@@ -474,15 +486,71 @@ const FinanzkompassDashboard = () => {
         <div className="w-full h-1 bg-gradient-to-r from-blue-400 to-emerald-400 mt-2"></div>
       </header>
       
-      {/* REORDERED: Data Entry Form moved to the top */}
-      <div className="mb-6 sm:mb-8 bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
-        <h2 className="text-lg sm:text-xl font-semibold mb-4">Daten aktualisieren</h2>
+      {/* Overall Score */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 flex flex-col items-center justify-center">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Gesamtscore</h2>
+          <div className="relative w-36 sm:w-48 h-36 sm:h-48 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-8 border-gray-700"></div>
+            <svg viewBox="0 0 36 36" className="w-full h-full">
+              <path
+                d="M18 2.0845
+                  a 15.9155 15.9155 0 0 1 0 31.831
+                  a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none"
+                stroke={getStatusColor(scores.gesamtscore)}
+                strokeWidth="3"
+                strokeDasharray={`${scores.gesamtscore}, 100`}
+                strokeLinecap="round"
+                className="transform -rotate-90 origin-center"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center flex-col">
+              <span className="text-3xl sm:text-4xl font-bold">{Math.round(scores.gesamtscore)}%</span>
+              <span className="text-xs sm:text-sm text-gray-400 mt-1">Gesamt</span>
+            </div>
+          </div>
+        </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Financial Basis Inputs */}
+        {/* Pillar Scores */}
+        <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 col-span-1 lg:col-span-2">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Scores Bedarfsfelder</h2>
+          <div className="flex flex-col sm:flex-row items-center justify-around h-auto sm:h-48">
+            {pillarData.map((entry, index) => (
+              <div key={`pillar-${index}`} className="flex flex-col items-center mb-6 sm:mb-0 w-full sm:w-auto">
+                <div className="relative w-28 sm:w-32 h-28 sm:h-32 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
+                  <svg viewBox="0 0 36 36" className="w-full h-full">
+                    <path
+                      d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                      fill="none"
+                      stroke={entry.color}
+                      strokeWidth="3"
+                      strokeDasharray={`${entry.value}, 100`}
+                      strokeLinecap="round"
+                      className="transform -rotate-90 origin-center"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-xl sm:text-2xl font-bold">{Math.round(entry.value)}%</span>
+                  </div>
+                </div>
+                <span className="text-xs sm:text-sm mt-2 text-center max-w-36" style={{ color: entry.color }}>{entry.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      {/* Data Entry Form moved inside gray boxes for each content category */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {/* Financial Basis Box */}
+        <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
+          <h3 className="font-medium text-lg mb-4" style={{ color: CATEGORY_COLORS.finanzielleBasis }}>Finanzielle Basis</h3>
+          
           <div className="space-y-3 sm:space-y-4 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-700">
-            <h3 className="font-medium text-blue-400">Finanzielle Basis</h3>
-            
             <div>
               <label className="block text-sm text-gray-400 mb-1">Einkommen (€/Monat)</label>
               <input
@@ -549,13 +617,15 @@ const FinanzkompassDashboard = () => {
               />
             </div>
           </div>
+        </div>
+        
+        {/* Risk Protection Box */}
+        <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
+          <h3 className="font-medium text-lg mb-4" style={{ color: CATEGORY_COLORS.risikoabsicherung }}>Risikoabsicherung</h3>
           
-          {/* Insurance & Risk Protection Inputs */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-green-400">Risikoabsicherung</h3>
-            
+          <div className="space-y-3 sm:space-y-4 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-700">
             <div className="space-y-2">
-              <h4 className="text-sm text-gray-400">Personenversicherungen</h4>
+              <h4 className="text-sm" style={{ color: CATEGORY_COLORS.risikoabsicherung }}>Personenversicherungen</h4>
               
               <div className="flex items-center">
                 <input
@@ -614,7 +684,7 @@ const FinanzkompassDashboard = () => {
             </div>
             
             <div className="space-y-2">
-              <h4 className="text-sm text-gray-400">Sachversicherungen</h4>
+              <h4 className="text-sm" style={{ color: CATEGORY_COLORS.risikoabsicherung }}>Sachversicherungen</h4>
               
               <div className="flex items-center">
                 <input
@@ -662,7 +732,7 @@ const FinanzkompassDashboard = () => {
             </div>
             
             <div className="space-y-2">
-              <h4 className="text-sm text-gray-400">Notfallordner</h4>
+              <h4 className="text-sm" style={{ color: CATEGORY_COLORS.risikoabsicherung }}>Notfallordner</h4>
               
               <div className="flex items-center">
                 <input
@@ -698,13 +768,15 @@ const FinanzkompassDashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+        
+        {/* Investment & Asset Base Box */}
+        <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
+          <h3 className="font-medium text-lg mb-4" style={{ color: CATEGORY_COLORS.vermoegenAnlage }}>Anlage & Vermögensbasis</h3>
           
-          {/* Investment & Retirement Inputs */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-yellow-400">Anlage & Vermögensbasis</h3>
-            
+          <div className="space-y-3 sm:space-y-4 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-700">
             <div className="space-y-2">
-              <h4 className="text-sm text-gray-400">Vermögensanlage</h4>
+              <h4 className="text-sm" style={{ color: CATEGORY_COLORS.vermoegenAnlage }}>Vermögensanlage</h4>
               
               <div className="space-y-1 mb-2">
                 <div className="flex items-center">
@@ -843,7 +915,7 @@ const FinanzkompassDashboard = () => {
             </div>
             
             <div className="space-y-2">
-              <h4 className="text-sm text-gray-400">Altersvorsorge (€/Monat)</h4>
+              <h4 className="text-sm" style={{ color: CATEGORY_COLORS.vermoegenAnlage }}>Altersvorsorge (€/Monat)</h4>
               
               <div>
                 <label className="block text-sm mb-1">Gesetzliche Rente</label>
@@ -882,128 +954,72 @@ const FinanzkompassDashboard = () => {
         </div>
       </div>
       
-      {/* Overall Score */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 flex flex-col items-center justify-center">
-          <h2 className="text-xl font-semibold mb-4">Gesamtscore</h2>
-          <div className="relative w-48 h-48 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-8 border-gray-700"></div>
-            <svg viewBox="0 0 36 36" className="w-full h-full">
-              <path
-                d="M18 2.0845
-                  a 15.9155 15.9155 0 0 1 0 31.831
-                  a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke={getStatusColor(scores.gesamtscore)}
-                strokeWidth="3"
-                strokeDasharray={`${scores.gesamtscore}, 100`}
-                strokeLinecap="round"
-                className="transform -rotate-90 origin-center"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center flex-col">
-              <span className="text-4xl font-bold">{Math.round(scores.gesamtscore)}%</span>
-              <span className="text-sm text-gray-400 mt-1">Gesamt</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Pillar Scores */}
-        <div className="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 col-span-1 lg:col-span-2">
-          <h2 className="text-xl font-semibold mb-4">Gesamtscore Bedarfsfelder</h2>
-          <div className="flex flex-col sm:flex-row items-center justify-around h-48">
-            {pillarData.map((entry, index) => (
-              <div key={`pillar-${index}`} className="flex flex-col items-center mb-4 sm:mb-0">
-                <div className="relative w-32 h-32 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-4 border-gray-700"></div>
-                  <svg viewBox="0 0 36 36" className="w-full h-full">
-                    <path
-                      d="M18 2.0845
-                        a 15.9155 15.9155 0 0 1 0 31.831
-                        a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke={entry.color}
-                      strokeWidth="3"
-                      strokeDasharray={`${entry.value}, 100`}
-                      strokeLinecap="round"
-                      className="transform -rotate-90 origin-center"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold">{Math.round(entry.value)}%</span>
-                  </div>
-                </div>
-                <span className="text-sm mt-2 text-center" style={{ color: entry.color }}>{entry.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      
       {/* Category Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 col-span-1 lg:col-span-3">
-          <h2 className="text-xl font-semibold mb-4">Detailanalyse</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={detailData}
-              layout="vertical"
-              margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#555" />
-              <XAxis type="number" domain={[0, 100]} tick={{ fill: '#ccc' }} />
-              <YAxis 
-                dataKey="name" 
-                type="category" 
-                tick={(props) => {
-                  const { x, y, payload } = props;
-                  const item = detailData.find(d => d.name === payload.value);
-                  const textColor = item ? item.color : '#ccc';
-                  return (
-                    <text x={x} y={y} dy={4} textAnchor="end" fill={textColor} fontSize={12}>
-                      {payload.value}
-                    </text>
-                  );
-                }}
-                width={120} 
-              />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#333', border: 'none' }}
-                formatter={(value) => [`${Math.round(value)}%`, 'Score']}
-              />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {detailData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 col-span-1 lg:col-span-3">
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Detailanalyse</h2>
+          <div className="h-64 sm:h-300 overflow-x-auto">
+            <ResponsiveContainer width="100%" height={300} minWidth={600}>
+              <BarChart
+                data={detailData}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#555" />
+                <XAxis type="number" domain={[0, 100]} tick={{ fill: '#ccc' }} />
+                <YAxis 
+                  dataKey="name" 
+                  type="category" 
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    const item = detailData.find(d => d.name === payload.value);
+                    const textColor = item ? item.color : '#ccc';
+                    return (
+                      <text x={x} y={y} dy={4} textAnchor="end" fill={textColor} fontSize={12}>
+                        {payload.value}
+                      </text>
+                    );
+                  }}
+                  width={120} 
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#333', border: 'none' }}
+                  formatter={(value) => [`${Math.round(value)}%`, 'Score']}
+                />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {detailData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
       
       {/* Recommendations */}
-      <div className="mt-8 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700 relative overflow-hidden">
+      <div className="mt-6 sm:mt-8 bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-emerald-400 opacity-10 transform rotate-45 translate-x-16 -translate-y-8"></div>
-        <h2 className="text-xl font-semibold mb-4">Empfehlungen</h2>
+        <h2 className="text-lg sm:text-xl font-semibold mb-4">Empfehlungen</h2>
         <div className="space-y-4 pr-2">
           {recommendations.length > 0 ? (
             recommendations.map((rec, index) => (
               <div 
                 key={`rec-${index}`} 
-                className="p-4 rounded-lg bg-gray-700 border-l-4"
+                className="p-3 sm:p-4 rounded-lg bg-gray-700 border-l-4"
                 style={{ borderLeftColor: 
                   rec.category === "Finanzielle Basis" ? CATEGORY_COLORS.finanzielleBasis : 
                   rec.category === "Risikoabsicherung" ? CATEGORY_COLORS.risikoabsicherung : 
                   CATEGORY_COLORS.vermoegenAnlage 
                 }}
               >
-                <div className="text-sm" style={{ 
+                <div className="text-xs sm:text-sm" style={{ 
                   color: rec.category === "Finanzielle Basis" ? CATEGORY_COLORS.finanzielleBasis : 
                          rec.category === "Risikoabsicherung" ? CATEGORY_COLORS.risikoabsicherung : 
                          CATEGORY_COLORS.vermoegenAnlage 
                 }}>{rec.category}</div>
-                <h3 className="font-medium mb-1">{rec.title}</h3>
-                <p className="text-sm text-gray-300">{rec.description}</p>
+                <h3 className="font-medium mb-1 text-sm sm:text-base">{rec.title}</h3>
+                <p className="text-xs sm:text-sm text-gray-300">{rec.description}</p>
               </div>
             ))
           ) : (
@@ -1014,7 +1030,7 @@ const FinanzkompassDashboard = () => {
         </div>
       </div>
       
-      <footer className="mt-8 text-center text-gray-400 text-sm">
+      <footer className="mt-6 sm:mt-8 text-center text-gray-400 text-xs sm:text-sm">
         <p>© 2025 Financial Wellbeing Dashboard</p>
       </footer>
     </div>
