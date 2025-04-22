@@ -550,7 +550,7 @@ const FinanzkompassDashboard = () => {
         <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
           <h3 className="font-medium text-lg mb-4" style={{ color: CATEGORY_COLORS.finanzielleBasis }}>Finanzielle Basis</h3>
           
-          <div className="space-y-3 sm:space-y-4 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-700">
+          <div className="space-y-3 sm:space-y-4">
             <div>
               <label className="block text-sm text-gray-400 mb-1">Einkommen (€/Monat)</label>
               <input
@@ -623,7 +623,7 @@ const FinanzkompassDashboard = () => {
         <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
           <h3 className="font-medium text-lg mb-4" style={{ color: CATEGORY_COLORS.risikoabsicherung }}>Risikoabsicherung</h3>
           
-          <div className="space-y-3 sm:space-y-4 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-700">
+          <div className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <h4 className="text-sm" style={{ color: CATEGORY_COLORS.risikoabsicherung }}>Personenversicherungen</h4>
               
@@ -759,12 +759,45 @@ const FinanzkompassDashboard = () => {
               <div className="flex items-center">
                 <input
                   type="checkbox"
+                  name="betreuungsverfuegung"
+                  checked={formData.notfallordner.betreuungsverfuegung}
+                  onChange={(e) => handleInputChange(e, 'notfallordner')}
+                  className="mr-2"
+                />
+                <label className="text-sm">Betreuungsverfügung</label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
                   name="bankUnterlagen"
                   checked={formData.notfallordner.bankUnterlagen}
                   onChange={(e) => handleInputChange(e, 'notfallordner')}
                   className="mr-2"
                 />
                 <label className="text-sm">Bank- und Versicherungsunterlagen</label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="testament"
+                  checked={formData.notfallordner.testament}
+                  onChange={(e) => handleInputChange(e, 'notfallordner')}
+                  className="mr-2"
+                />
+                <label className="text-sm">Testament oder Erbvertrag</label>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="kontaktliste"
+                  checked={formData.notfallordner.kontaktliste}
+                  onChange={(e) => handleInputChange(e, 'notfallordner')}
+                  className="mr-2"
+                />
+                <label className="text-sm">Kontaktliste für Notfälle</label>
               </div>
             </div>
           </div>
@@ -774,7 +807,7 @@ const FinanzkompassDashboard = () => {
         <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
           <h3 className="font-medium text-lg mb-4" style={{ color: CATEGORY_COLORS.vermoegenAnlage }}>Anlage & Vermögensbasis</h3>
           
-          <div className="space-y-3 sm:space-y-4 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-700">
+          <div className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <h4 className="text-sm" style={{ color: CATEGORY_COLORS.vermoegenAnlage }}>Vermögensanlage</h4>
               
