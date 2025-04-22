@@ -110,7 +110,7 @@ const FinanzkompassDashboard = () => {
     const link = document.querySelector("link[rel~='icon']") || document.createElement('link');
     link.type = 'image/jpeg';
     link.rel = 'icon';
-    link.href = 'Icon.jpg';
+    link.href = 'Icon.png';
     document.head.appendChild(link);
   }, []);
   
