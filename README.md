@@ -1,70 +1,96 @@
-# Getting Started with Create React App
+# Finanzkompass Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Ein interaktives Dashboard zur Bewertung der finanziellen Situation von Privatpersonen, entwickelt von Markus Lehleiter für das House of Finance & Tech und Roland Berger.
 
-## Available Scripts
+![Dashboard Screenshot](/api/placeholder/800/400)
 
-In the project directory, you can run:
+## Übersicht
 
-### `npm start`
+Das Finanzkompass Dashboard ist ein React-basiertes Tool, das Nutzern hilft, ihre finanzielle Situation zu analysieren und zu verbessern. Das Dashboard bewertet drei Hauptbereiche der persönlichen Finanzen:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+1. **Finanzielle Basis** - Kurzfristige finanzielle Stabilität
+2. **Risikoabsicherung** - Schutz vor unvorhergesehenen Ereignissen
+3. **Anlage & Vermögensbasis** - Langfristiger Vermögensaufbau
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Basierend auf den eingegebenen Daten berechnet das Dashboard Scores für jeden Bereich und gibt personalisierte Empfehlungen zur Verbesserung der finanziellen Situation.
 
-### `npm test`
+## Funktionen
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **Interaktive Datenerfassung**: Einfache Eingabe von Einkommen, Ausgaben, Ersparnissen, Schulden, Versicherungen und Anlagen
+- **Visualisierung**: Übersichtliche grafische Darstellung der finanziellen Situation
+- **Detailanalyse**: Aufschlüsselung der Scores nach Teilbereichen
+- **Personalisierte Empfehlungen**: Konkrete Handlungsvorschläge basierend auf den individuellen Schwachstellen
+- **Responsive Design**: Optimiert für Desktop- und mobile Nutzung
 
-### `npm run build`
+## Technische Details
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **Framework**: React.js
+- **Styling**: Tailwind CSS
+- **Visualisierungen**: Recharts
+- **Berechnungslogik**: JavaScript
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Installation und Start
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Repository klonen:
+   ```
+   git clone https://github.com/username/finanzkompass-dashboard.git
+   cd finanzkompass-dashboard
+   ```
 
-### `npm run eject`
+2. Abhängigkeiten installieren:
+   ```
+   npm install
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+3. Entwicklungsserver starten:
+   ```
+   npm start
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+4. Im Browser öffnen:
+   ```
+   http://localhost:3000
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Projektstruktur
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+src/
+├── assets/          # Logos und Bilder
+├── components/      # React-Komponenten
+│   ├── FinanzkompassDashboard.js
+│   └── ... 
+├── utils/           # Hilfsfunktionen und Berechnungen
+├── App.js           # Hauptanwendung
+└── index.js         # Entry point
+```
 
-## Learn More
+## Berechnungslogik
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Die Berechnungslogik des Dashboards ist in der separaten Datei [DOCUMENTATION.md](./DOCUMENTATION.md) detailliert beschrieben. Besonders hervorzuheben ist die verbesserte Methode zur Berechnung des Vermögensanlage-Scores, die auf modernen Portfoliotheorie-Prinzipien basiert und folgende Aspekte berücksichtigt:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+- Tatsächliche Portfolioallokation
+- Konzentrationsnachteil für übermäßige Konzentration in einzelnen Anlageklassen
+- Diversifikationsbonus für breit gestreute Portfolios
+- Angemessenheitsbonus für ausreichende Investitionshöhe
 
-### Code Splitting
+## Anpassung und Erweiterung
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Das Dashboard kann leicht angepasst und erweitert werden:
 
-### Analyzing the Bundle Size
+- Änderung der Gewichtungen in der Berechnungslogik (siehe `calculateScores` Funktion)
+- Hinzufügen neuer Bewertungskategorien
+- Anpassung der Empfehlungslogik (siehe `getRecommendations` Funktion)
+- Erweiterung um weitere Visualisierungen
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Lizenz
 
-### Making a Progressive Web App
+© 2025 House of Finance & Tech // entwickelt von Markus Lehleiter
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Kontakt
 
-### Advanced Configuration
+Bei Fragen oder Anregungen wenden Sie sich bitte an:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+**Markus Lehleiter**  
+Email: contact@markus-lehleiter.com  
+Website: www.hoft.de
