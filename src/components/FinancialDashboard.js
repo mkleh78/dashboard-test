@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-// Importiere die Logos
-
-import rolandBergerLogo from '../assets/roland-berger-logo.png';
-import hoftLogo from '../assets/hoft-logo.png';
 
 // Main dashboard component
 const FinanzkompassDashboard = () => {
   // State for the dashboard
   const [formData, setFormData] = useState({
+    // Personal Data (NEW)
+    alter: 30,
+    geschlecht: 'divers',
+    alleinstehend: true,
+    immobilie: false,
+    auto: true,
+    
     // Financial Basis
     einkommen: 3000,
     fixeKosten: 1200,
@@ -118,7 +121,9 @@ const FinanzkompassDashboard = () => {
   const calculateScores = (data) => {
     // Extract data
     const { einkommen, fixeKosten, variableKosten, notgroschen, dispoKredite, ratenKredite,
-            versicherungen, notfallordner, vermoegenAnlage, altersvorsorge } = data;
+            versicherungen, notfallordner, vermoegenAnlage, altersvorsorge,
+            // NEW: personal data 
+            alleinstehend, immobilie, auto } = data;
     
     // 1. Calculate Sparquote Score
     const monatUeberschuss = einkommen - fixeKosten - variableKosten;
@@ -158,20 +163,68 @@ const FinanzkompassDashboard = () => {
     );
     
     // 5. Calculate Personenversicherungen Score
+    // MODIFIED: Adapt scoring based on personal circumstances
     let personenversicherungenScore = 0;
+    let maxPersonenversicherungenScore = 0;
+    
+    // Krankenversicherung is always needed
+    maxPersonenversicherungenScore += 30;
     if (versicherungen.krankenversicherung) personenversicherungenScore += 30;
+    
+    // Berufsunfähigkeit is always needed
+    maxPersonenversicherungenScore += 30;
     if (versicherungen.berufsunfaehigkeit) personenversicherungenScore += 30;
+    
+    // Private Haftpflicht is always needed
+    maxPersonenversicherungenScore += 20;
     if (versicherungen.privateHaftpflicht) personenversicherungenScore += 20;
-    if (versicherungen.risikoleben) personenversicherungenScore += 15;
+    
+    // Risikoleben only needed if not single
+    if (!alleinstehend) {
+      maxPersonenversicherungenScore += 15;
+      if (versicherungen.risikoleben) personenversicherungenScore += 15;
+    }
+    
+    // Unfall is always needed
+    maxPersonenversicherungenScore += 5;
     if (versicherungen.unfall) personenversicherungenScore += 5;
     
+    // Normalize score to 100 scale if max score changed
+    personenversicherungenScore = maxPersonenversicherungenScore > 0 ? 
+      (personenversicherungenScore / maxPersonenversicherungenScore) * 100 : 0;
+    
     // 6. Calculate Sachversicherungen Score
+    // MODIFIED: Adapt scoring based on personal circumstances
     let sachversicherungenScore = 0;
+    let maxSachversicherungenScore = 0;
+    
+    // Private Haftpflicht is always needed
+    maxSachversicherungenScore += 35;
     if (versicherungen.privateHaftpflicht) sachversicherungenScore += 35;
+    
+    // Hausrat is always needed
+    maxSachversicherungenScore += 20;
     if (versicherungen.hausrat) sachversicherungenScore += 20;
-    if (versicherungen.wohngebaeude) sachversicherungenScore += 20;
+    
+    // Wohngebäude only needed if property is owned
+    if (immobilie) {
+      maxSachversicherungenScore += 20;
+      if (versicherungen.wohngebaeude) sachversicherungenScore += 20;
+    }
+    
+    // Rechtsschutz is always needed
+    maxSachversicherungenScore += 15;
     if (versicherungen.rechtsschutz) sachversicherungenScore += 15;
-    if (versicherungen.kfzHaftpflicht) sachversicherungenScore += 10;
+    
+    // KFZ-Haftpflicht only needed if car is owned
+    if (auto) {
+      maxSachversicherungenScore += 10;
+      if (versicherungen.kfzHaftpflicht) sachversicherungenScore += 10;
+    }
+    
+    // Normalize score to 100 scale if max score changed
+    sachversicherungenScore = maxSachversicherungenScore > 0 ? 
+      (sachversicherungenScore / maxSachversicherungenScore) * 100 : 0;
     
     // 7. Calculate Notfallordner Score
     let notfallordnerScore = 0;
@@ -370,6 +423,7 @@ const FinanzkompassDashboard = () => {
       if (!formData.versicherungen.krankenversicherung) missingInsurance.push("Krankenversicherung");
       if (!formData.versicherungen.berufsunfaehigkeit) missingInsurance.push("Berufsunfähigkeitsversicherung");
       if (!formData.versicherungen.privateHaftpflicht) missingInsurance.push("Private Haftpflichtversicherung");
+      if (!formData.alleinstehend && !formData.versicherungen.risikoleben) missingInsurance.push("Risikolebensversicherung");
       
       if (missingInsurance.length > 0) {
         recommendations.push({
@@ -384,6 +438,8 @@ const FinanzkompassDashboard = () => {
       const missingInsurance = [];
       if (!formData.versicherungen.privateHaftpflicht) missingInsurance.push("Private Haftpflichtversicherung");
       if (!formData.versicherungen.hausrat) missingInsurance.push("Hausratversicherung");
+      if (formData.immobilie && !formData.versicherungen.wohngebaeude) missingInsurance.push("Wohngebäudeversicherung");
+      if (formData.auto && !formData.versicherungen.kfzHaftpflicht) missingInsurance.push("KFZ-Haftpflichtversicherung");
       
       if (missingInsurance.length > 0) {
         recommendations.push({
@@ -533,6 +589,40 @@ const FinanzkompassDashboard = () => {
         }));
       }
     }
+    
+    // NEW: Special handling for conditional fields based on personal data
+    if (name === 'immobilie' && !checked) {
+      // If property is unchecked, reset Wohngebäude insurance
+      setFormData(prev => ({
+        ...prev,
+        versicherungen: {
+          ...prev.versicherungen,
+          wohngebaeude: false
+        }
+      }));
+    }
+    
+    if (name === 'auto' && !checked) {
+      // If car is unchecked, reset KFZ-Haftpflicht insurance
+      setFormData(prev => ({
+        ...prev,
+        versicherungen: {
+          ...prev.versicherungen,
+          kfzHaftpflicht: false
+        }
+      }));
+    }
+    
+    if (name === 'alleinstehend' && checked) {
+      // If single is checked, reset Risikoleben insurance
+      setFormData(prev => ({
+        ...prev,
+        versicherungen: {
+          ...prev.versicherungen,
+          risikoleben: false
+        }
+      }));
+    }
   };
   
   return (
@@ -542,10 +632,6 @@ const FinanzkompassDashboard = () => {
           <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
             Financial Wellbeing Dashboard
           </h1>
-          <div className="flex flex-col sm:flex-row items-end sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-            <img src={rolandBergerLogo} alt="Roland Berger" className="h-6 sm:h-10" />
-            <img src={hoftLogo} alt="HoFT" className="h-6 sm:h-10" />
-          </div>
         </div>
         <div className="w-full h-1 bg-gradient-to-r from-blue-400 to-emerald-400 mt-2"></div>
       </header>
@@ -608,7 +694,75 @@ const FinanzkompassDashboard = () => {
         </div>
       </div>
       
-      {/* Data Entry Form moved inside gray boxes for each content category */}
+      {/* NEW: Personal Data Form */}
+      <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 mb-6 sm:mb-8">
+        <h3 className="font-medium text-lg mb-4 text-purple-400">Persönliche Daten</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Alter</label>
+            <input
+              type="number"
+              name="alter"
+              value={formData.alter}
+              onChange={(e) => handleInputChange(e)}
+              className="w-full bg-gray-700 rounded px-3 py-2 text-white"
+              min="0"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Geschlecht</label>
+            <select
+              name="geschlecht"
+              value={formData.geschlecht}
+              onChange={(e) => handleInputChange(e)}
+              className="w-full bg-gray-700 rounded px-3 py-2 text-white"
+            >
+              <option value="männlich">Männlich</option>
+              <option value="weiblich">Weiblich</option>
+              <option value="divers">Divers</option>
+            </select>
+          </div>
+          
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="alleinstehend"
+                checked={formData.alleinstehend}
+                onChange={(e) => handleInputChange(e)}
+                className="mr-2"
+              />
+              <label className="text-sm">Alleinstehend</label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="immobilie"
+                checked={formData.immobilie}
+                onChange={(e) => handleInputChange(e)}
+                className="mr-2"
+              />
+              <label className="text-sm">Immobilie vorhanden</label>
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="auto"
+                checked={formData.auto}
+                onChange={(e) => handleInputChange(e)}
+                className="mr-2"
+              />
+              <label className="text-sm">Auto vorhanden</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Data Entry Form */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Financial Basis Box */}
         <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
@@ -724,16 +878,19 @@ const FinanzkompassDashboard = () => {
                 <label className="text-sm">Private Haftpflicht</label>
               </div>
               
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="risikoleben"
-                  checked={formData.versicherungen.risikoleben}
-                  onChange={(e) => handleInputChange(e, 'versicherungen')}
-                  className="mr-2"
-                />
-                <label className="text-sm">Risikoleben</label>
-              </div>
+              {/* Only show Risikoleben if not single */}
+              {!formData.alleinstehend && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="risikoleben"
+                    checked={formData.versicherungen.risikoleben}
+                    onChange={(e) => handleInputChange(e, 'versicherungen')}
+                    className="mr-2"
+                  />
+                  <label className="text-sm">Risikoleben</label>
+                </div>
+              )}
               
               <div className="flex items-center">
                 <input
@@ -761,16 +918,19 @@ const FinanzkompassDashboard = () => {
                 <label className="text-sm">Hausrat</label>
               </div>
               
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="wohngebaeude"
-                  checked={formData.versicherungen.wohngebaeude}
-                  onChange={(e) => handleInputChange(e, 'versicherungen')}
-                  className="mr-2"
-                />
-                <label className="text-sm">Wohngebäude</label>
-              </div>
+              {/* Only show Wohngebäude if property is owned */}
+              {formData.immobilie && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="wohngebaeude"
+                    checked={formData.versicherungen.wohngebaeude}
+                    onChange={(e) => handleInputChange(e, 'versicherungen')}
+                    className="mr-2"
+                  />
+                  <label className="text-sm">Wohngebäude</label>
+                </div>
+              )}
               
               <div className="flex items-center">
                 <input
@@ -783,16 +943,19 @@ const FinanzkompassDashboard = () => {
                 <label className="text-sm">Rechtsschutz</label>
               </div>
               
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="kfzHaftpflicht"
-                  checked={formData.versicherungen.kfzHaftpflicht}
-                  onChange={(e) => handleInputChange(e, 'versicherungen')}
-                  className="mr-2"
-                />
-                <label className="text-sm">KFZ-Haftpflicht</label>
-              </div>
+              {/* Only show KFZ-Haftpflicht if car is owned */}
+              {formData.auto && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="kfzHaftpflicht"
+                    checked={formData.versicherungen.kfzHaftpflicht}
+                    onChange={(e) => handleInputChange(e, 'versicherungen')}
+                    className="mr-2"
+                  />
+                  <label className="text-sm">KFZ-Haftpflicht</label>
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -1129,7 +1292,7 @@ const FinanzkompassDashboard = () => {
       </div>
       
       <footer className="mt-6 sm:mt-8 text-center text-gray-400 text-xs sm:text-sm">
-        <p>© 2025 House of Finance & Tech // entwickelt von Markus Lehleiter</p>
+        <p>© 2025 Financial Wellbeing Dashboard</p>
       </footer>
     </div>
   );
