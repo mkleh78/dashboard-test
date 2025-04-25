@@ -6,19 +6,19 @@ const FinanzkompassDashboard = () => {
   // State for the dashboard
   const [formData, setFormData] = useState({
     // Personal Data (NEW)
-    alter: 30,
-    geschlecht: 'divers',
-    alleinstehend: true,
-    immobilie: false,
+    alter: 46,
+    geschlecht: 'weiblich',
+    alleinstehend: false,
+    immobilie: true,
     auto: true,
     
     // Financial Basis
-    einkommen: 3000,
-    fixeKosten: 1200,
-    variableKosten: 800,
-    notgroschen: 4000,
-    dispoKredite: 200,
-    ratenKredite: 10000,
+    einkommen: 2200,
+    fixeKosten: 1050,
+    variableKosten: 650,
+    notgroschen: 5100,
+    dispoKredite: 100,
+    ratenKredite: 12000,
     
     // Risk Protection
     versicherungen: {
@@ -26,17 +26,17 @@ const FinanzkompassDashboard = () => {
       berufsunfaehigkeit: false,
       privateHaftpflicht: true,
       risikoleben: false,
-      unfall: false,
+      unfall: true,
       hausrat: true,
-      wohngebaeude: false,
-      rechtsschutz: false,
+      wohngebaeude: true,
+      rechtsschutz: true,
       kfzHaftpflicht: true
     },
     
     // Emergency Folder
     notfallordner: {
-      vorsorgevollmacht: false,
-      patientenverfuegung: false,
+      vorsorgevollmacht: true,
+      patientenverfuegung: true,
       betreuungsverfuegung: false,
       bankUnterlagen: true,
       testament: false,
@@ -45,23 +45,23 @@ const FinanzkompassDashboard = () => {
     
     // Investment & Asset Base
     vermoegenAnlage: {
-      aktienEtfs: true,
-      aktienEtfsBetrag: 15000,
-      immobilien: false,
-      immobilienBetrag: 0,
+      aktienEtfs: false,
+      aktienEtfsBetrag: 0,
+      immobilien: true,
+      immobilienBetrag: 25000,
       anleihen: false,
       anleihenBetrag: 0,
-      versicherungen: false,
-      versicherungenBetrag: 0,
+      versicherungen: true,
+      versicherungenBetrag: 18000,
       bankeinlagen: true,
-      bankeinlagenBetrag: 5000
+      bankeinlagenBetrag: 12000
     },
     
     // Retirement Planning
     altersvorsorge: {
-      gesetzlicheRente: 1000,
-      betrieblicheRente: 200,
-      privateRente: 300
+      gesetzlicheRente: 850,
+      betrieblicheRente: 150,
+      privateRente: 100
     }
   });
   
