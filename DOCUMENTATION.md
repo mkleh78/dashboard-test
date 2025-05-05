@@ -1,43 +1,43 @@
-# Financial Wellbeing Dashboard - Calculation Logic Documentation
+# Financial Wellbeing Dashboard - Dokumentation der Berechnungslogik
 
-This document explains the calculation logic used in the Financial Wellbeing Dashboard application. The dashboard evaluates financial health across three main pillars and provides a comprehensive score with specific recommendations.
+Dieses Dokument erläutert die Berechnungslogik, die im Financial Wellbeing Dashboard verwendet wird. Das Dashboard bewertet die finanzielle Gesundheit in drei Hauptbereichen und liefert eine umfassende Bewertung mit spezifischen Empfehlungen.
 
-## Overview
+## Überblick
 
-The dashboard calculates scores in three main categories:
-1. Financial Basis (`finanzielleBasis`)
-2. Risk Protection (`risikoabsicherung`)
-3. Investment & Asset Base (`anlageVermoegensbasis`)
+Das Dashboard berechnet Scores in drei Hauptkategorien:
+1. Finanzielle Basis (`finanzielleBasis`)
+2. Risikoabsicherung (`risikoabsicherung`)
+3. Anlage & Vermögensbasis (`anlageVermoegensbasis`)
 
-Each category contains subcategories that are weighted to produce the overall score.
+Jede Kategorie enthält Unterkategorien, die gewichtet werden, um den Gesamtscore zu ermitteln.
 
-## Calculation Details
+## Berechnungsdetails
 
-### 1. Financial Basis Score
+### 1. Finanzielle Basis Score
 
-The Financial Basis score is composed of three subscores:
+Der Score für die finanzielle Basis setzt sich aus drei Teilwerten zusammen:
 
-#### 1.1 Savings Rate Score (`sparquote`)
+#### 1.1 Sparquote Score (`sparquote`)
 ```javascript
 const monatUeberschuss = einkommen - fixeKosten - variableKosten;
 const sparquote = monatUeberschuss / einkommen;
 const sparquoteScore = Math.min(1, Math.max(0, sparquote)) * 100;
 ```
-- Calculates monthly surplus (income minus expenses)
-- Determines savings rate as percentage of income
-- Normalizes to 0-100 scale (capped at 100%)
+- Berechnet den monatlichen Überschuss (Einkommen minus Ausgaben)
+- Bestimmt die Sparquote als Prozentsatz des Einkommens
+- Normalisiert auf eine 0-100 Skala (maximaler Wert 100%)
 
-#### 1.2 Emergency Fund Score (`notgroschen`)
+#### 1.2 Notgroschen Score (`notgroschen`)
 ```javascript
 const monatsausgaben = fixeKosten + variableKosten;
 const notgroschenSoll = 3 * monatsausgaben;
 const notgroschenScore = Math.min(100, (notgroschen / notgroschenSoll) * 100);
 ```
-- Target emergency fund is 3x monthly expenses
-- Score represents percentage of target achieved
-- Capped at 100%
+- Ziel-Notgroschen entspricht 3x monatlichen Ausgaben
+- Score entspricht dem Prozentsatz des erreichten Ziels
+- Maximaler Wert 100%
 
-#### 1.3 Debt Score (`schulden`)
+#### 1.3 Schulden Score (`schulden`)
 ```javascript
 const gesamtschulden = dispoKredite + ratenKredite;
 const schuldenquote = gesamtschulden / (einkommen * 12);
@@ -51,22 +51,22 @@ if (schuldenquote < 0.2) {
   schuldenScore = 50 - ((schuldenquote - 0.35) / 0.65) * 50;
 }
 
-// Apply penalty for overdraft > €500
+// Abzug für Dispo > 500€
 if (dispoKredite > 500) {
   schuldenScore -= 5;
 }
 
 schuldenScore = Math.max(0, schuldenScore);
 ```
-- Calculates debt-to-annual-income ratio
-- Score breakpoints:
-  * Debt ratio < 20%: 100 points
-  * Debt ratio 20-35%: Linear decrease from 100 to 50
-  * Debt ratio > 35%: Linear decrease from 50 to 0
-- 5-point penalty for overdrafts exceeding €500
-- Minimum score is 0
+- Berechnet das Verhältnis von Schulden zu Jahreseinkommen
+- Score-Grenzwerte:
+  * Schuldenquote < 20%: 100 Punkte
+  * Schuldenquote 20-35%: Lineare Abnahme von 100 auf 50
+  * Schuldenquote > 35%: Lineare Abnahme von 50 auf 0
+- 5 Punkte Abzug für Dispokredit über 500€
+- Mindestscore ist 0
 
-#### 1.4 Overall Financial Basis Score
+#### 1.4 Gesamtscore Finanzielle Basis
 ```javascript
 const finanzielleBasisScore = (
   0.4 * notgroschenScore +
@@ -74,21 +74,21 @@ const finanzielleBasisScore = (
   0.25 * sparquoteScore
 );
 ```
-Weighted average with:
-- Emergency fund: 40%
-- Debt score: 35%
-- Savings rate: 25%
+Gewichteter Durchschnitt mit:
+- Notgroschen: 40%
+- Schulden: 35%
+- Sparquote: 25%
 
-### 2. Risk Protection Score
+### 2. Risikoabsicherung Score
 
-The Risk Protection score comprises three subscores:
+Der Score für die Risikoabsicherung umfasst drei Teilwerte:
 
-#### 2.1 Personal Insurance Score (`personenversicherungen`)
+#### 2.1 Personenversicherungen Score (`personenversicherungen`)
 ```javascript
 let personenversicherungenScore = 0;
 let maxPersonenversicherungenScore = 0;
 
-// Add points for each insurance type
+// Punkte für jede Versicherungsart
 maxPersonenversicherungenScore += 30;
 if (versicherungen.krankenversicherung) personenversicherungenScore += 30;
 
@@ -98,7 +98,7 @@ if (versicherungen.berufsunfaehigkeit) personenversicherungenScore += 30;
 maxPersonenversicherungenScore += 20;
 if (versicherungen.privateHaftpflicht) personenversicherungenScore += 20;
 
-// Life insurance only needed if not single
+// Risikolebensversicherung nur wenn nicht alleinstehend
 if (!alleinstehend) {
   maxPersonenversicherungenScore += 15;
   if (versicherungen.risikoleben) personenversicherungenScore += 15;
@@ -107,31 +107,31 @@ if (!alleinstehend) {
 maxPersonenversicherungenScore += 5;
 if (versicherungen.unfall) personenversicherungenScore += 5;
 
-// Normalize to 100-point scale
+// Normalisierung auf 100-Punkte-Skala
 personenversicherungenScore = maxPersonenversicherungenScore > 0 ? 
   (personenversicherungenScore / maxPersonenversicherungenScore) * 100 : 0;
 ```
-- Points allocated by insurance type:
-  * Health insurance: 30 points
-  * Disability insurance: 30 points
-  * Personal liability: 20 points
-  * Life insurance: 15 points (only if not single)
-  * Accident insurance: 5 points
-- Score normalized based on applicable insurances
+- Punktevergabe nach Versicherungsart:
+  * Krankenversicherung: 30 Punkte
+  * Berufsunfähigkeitsversicherung: 30 Punkte
+  * Private Haftpflicht: 20 Punkte
+  * Risikolebensversicherung: 15 Punkte (nur wenn nicht alleinstehend)
+  * Unfallversicherung: 5 Punkte
+- Score wird auf Basis der anwendbaren Versicherungen normalisiert
 
-#### 2.2 Property Insurance Score (`sachversicherungen`)
+#### 2.2 Sachversicherungen Score (`sachversicherungen`)
 ```javascript
 let sachversicherungenScore = 0;
 let maxSachversicherungenScore = 0;
 
-// Add points for each insurance type
+// Punkte für jede Versicherungsart
 maxSachversicherungenScore += 35;
 if (versicherungen.privateHaftpflicht) sachversicherungenScore += 35;
 
 maxSachversicherungenScore += 20;
 if (versicherungen.hausrat) sachversicherungenScore += 20;
 
-// Building insurance only if property owned
+// Wohngebäudeversicherung nur bei Immobilienbesitz
 if (immobilie) {
   maxSachversicherungenScore += 20;
   if (versicherungen.wohngebaeude) sachversicherungenScore += 20;
@@ -140,25 +140,25 @@ if (immobilie) {
 maxSachversicherungenScore += 15;
 if (versicherungen.rechtsschutz) sachversicherungenScore += 15;
 
-// Car insurance only if car owned
+// KFZ-Versicherung nur bei Autobesitz
 if (auto) {
   maxSachversicherungenScore += 10;
   if (versicherungen.kfzHaftpflicht) sachversicherungenScore += 10;
 }
 
-// Normalize to 100-point scale
+// Normalisierung auf 100-Punkte-Skala
 sachversicherungenScore = maxSachversicherungenScore > 0 ? 
   (sachversicherungenScore / maxSachversicherungenScore) * 100 : 0;
 ```
-- Points allocated by insurance type:
-  * Personal liability: 35 points
-  * Home contents: 20 points
-  * Building insurance: 20 points (only if property owned)
-  * Legal protection: 15 points
-  * Car liability: 10 points (only if car owned)
-- Score normalized based on applicable insurances
+- Punktevergabe nach Versicherungsart:
+  * Private Haftpflicht: 35 Punkte
+  * Hausratversicherung: 20 Punkte
+  * Wohngebäudeversicherung: 20 Punkte (nur bei Immobilienbesitz)
+  * Rechtsschutzversicherung: 15 Punkte
+  * KFZ-Haftpflicht: 10 Punkte (nur bei Autobesitz)
+- Score wird auf Basis der anwendbaren Versicherungen normalisiert
 
-#### 2.3 Emergency Documents Score (`notfallordner`)
+#### 2.3 Notfallordner Score (`notfallordner`)
 ```javascript
 let notfallordnerScore = 0;
 if (notfallordner.vorsorgevollmacht) notfallordnerScore += 25;
@@ -168,16 +168,16 @@ if (notfallordner.bankUnterlagen) notfallordnerScore += 20;
 if (notfallordner.testament) notfallordnerScore += 10;
 if (notfallordner.kontaktliste) notfallordnerScore += 5;
 ```
-- Points allocated for different documents:
-  * Power of attorney: 25 points
-  * Living will: 20 points
-  * Care directive: 20 points
-  * Banking documents: 20 points
-  * Will or inheritance contract: 10 points
-  * Emergency contact list: 5 points
-- Maximum possible score: 100 points
+- Punktevergabe für verschiedene Dokumente:
+  * Vorsorgevollmacht: 25 Punkte
+  * Patientenverfügung: 20 Punkte
+  * Betreuungsverfügung: 20 Punkte
+  * Bank- und Versicherungsunterlagen: 20 Punkte
+  * Testament oder Erbvertrag: 10 Punkte
+  * Notfall-Kontaktliste: 5 Punkte
+- Maximale Punktzahl: 100 Punkte
 
-#### 2.4 Overall Risk Protection Score
+#### 2.4 Gesamtscore Risikoabsicherung
 ```javascript
 const risikoabsicherungScore = (
   0.5 * personenversicherungenScore +
@@ -185,20 +185,20 @@ const risikoabsicherungScore = (
   0.2 * notfallordnerScore
 );
 ```
-Weighted average with:
-- Personal insurance: 50%
-- Property insurance: 30%
-- Emergency documents: 20%
+Gewichteter Durchschnitt mit:
+- Personenversicherungen: 50%
+- Sachversicherungen: 30%
+- Notfallordner: 20%
 
-### 3. Investment & Asset Base Score
+### 3. Anlage & Vermögensbasis Score
 
-The Investment & Asset Base score consists of two subscores:
+Der Score für Anlage & Vermögensbasis besteht aus zwei Teilwerten:
 
-#### 3.1 Asset Investment Score (`vermoegensanlage`)
-This calculation involves multiple components:
+#### 3.1 Vermögensanlage Score (`vermoegensanlage`)
+Diese Berechnung umfasst mehrere Komponenten:
 
 ```javascript
-// Calculate total investment
+// Berechnung des Gesamtinvestments
 const totalInvestment = 
   (vermoegenAnlage.aktienEtfs ? vermoegenAnlage.aktienEtfsBetrag || 0 : 0) +
   (vermoegenAnlage.immobilien ? vermoegenAnlage.immobilienBetrag || 0 : 0) +
@@ -206,7 +206,7 @@ const totalInvestment =
   (vermoegenAnlage.versicherungen ? vermoegenAnlage.versicherungenBetrag || 0 : 0) +
   (vermoegenAnlage.bankeinlagen ? vermoegenAnlage.bankeinlagenBetrag || 0 : 0);
 
-// Calculate percentages for each asset class
+// Berechnung der Prozentsätze für jede Anlageklasse
 const percentages = totalInvestment === 0 ? null : {
   aktienEtfs: (vermoegenAnlage.aktienEtfs ? vermoegenAnlage.aktienEtfsBetrag || 0 : 0) / totalInvestment,
   immobilien: (vermoegenAnlage.immobilien ? vermoegenAnlage.immobilienBetrag || 0 : 0) / totalInvestment,
@@ -216,9 +216,9 @@ const percentages = totalInvestment === 0 ? null : {
 };
 ```
 
-1. **Base Score Calculation**:
+1. **Basiswert-Berechnung**:
 ```javascript
-// Base scores for each asset class
+// Basiswerte für jede Anlageklasse
 const baseScores = {
   aktienEtfs: 60,
   immobilien: 40,
@@ -227,7 +227,7 @@ const baseScores = {
   bankeinlagen: 15
 };
 
-// Calculate weighted score based on actual percentages
+// Berechnung des gewichteten Scores basierend auf tatsächlichen Prozentsätzen
 let weightedScore = 0;
 if (percentages) {
   Object.keys(percentages).forEach(assetClass => {
@@ -236,7 +236,7 @@ if (percentages) {
     }
   });
 } else {
-  // If no investments, check which types are selected
+  // Wenn keine Investitionen, Prüfung welche Typen ausgewählt sind
   if (vermoegenAnlage.aktienEtfs) weightedScore += baseScores.aktienEtfs * 0.1;
   if (vermoegenAnlage.immobilien) weightedScore += baseScores.immobilien * 0.1;
   if (vermoegenAnlage.anleihen) weightedScore += baseScores.anleihen * 0.1;
@@ -244,18 +244,18 @@ if (percentages) {
   if (vermoegenAnlage.bankeinlagen) weightedScore += baseScores.bankeinlagen * 0.1;
 }
 ```
-- Base score values by asset class:
-  * Stocks/ETFs: 60 points
-  * Real estate: 40 points
-  * Bonds: 25 points
-  * Insurance investments: 15 points
-  * Bank deposits: 15 points
-- Weighted by percentage allocation
-- If no investments yet, applies 10% of base score for selected types
+- Basiswerte nach Anlageklasse:
+  * Aktien/ETFs: 60 Punkte
+  * Immobilien: 40 Punkte
+  * Anleihen: 25 Punkte
+  * Versicherungsanlagen: 15 Punkte
+  * Bankeinlagen: 15 Punkte
+- Gewichtet nach prozentualer Aufteilung
+- Bei noch nicht getätigten Investitionen: 10% des Basiswerts für ausgewählte Typen
 
-2. **Concentration Penalty**:
+2. **Konzentrationsabzug**:
 ```javascript
-// Calculate concentration penalty
+// Berechnung des Konzentrationsabzugs
 let concentrationPenalty = 0;
 if (percentages) {
   Object.keys(percentages).forEach(assetClass => {
@@ -265,12 +265,12 @@ if (percentages) {
   });
 }
 ```
-- Penalizes portfolios with >70% in a single asset class
-- Up to 9% penalty for 100% concentration
+- Bestraft Portfolios mit >70% in einer einzelnen Anlageklasse
+- Bis zu 9% Abzug bei 100% Konzentration
 
-3. **Diversification Bonus**:
+3. **Diversifikationsbonus**:
 ```javascript
-// Calculate diversification bonus
+// Berechnung des Diversifikationsbonus
 let diversificationBonus = 0;
 if (percentages) {
   const diversifiedClasses = Object.keys(percentages).filter(assetClass => 
@@ -279,7 +279,7 @@ if (percentages) {
   
   diversificationBonus = Math.min(diversifiedClasses * 5, 20);
 } else {
-  // Count selected asset classes if no investments yet
+  // Zählung der ausgewählten Anlageklassen, wenn noch keine Investitionen
   let selectedCount = 0;
   if (vermoegenAnlage.aktienEtfs) selectedCount++;
   if (vermoegenAnlage.immobilien) selectedCount++;
@@ -290,71 +290,71 @@ if (percentages) {
   diversificationBonus = Math.min(selectedCount * 3, 15);
 }
 ```
-- Adds 5 points for each asset class with at least 10% allocation
-- Maximum bonus: 20 points (for all 5 asset classes)
-- For selected but unfunded investments: 3 points per selection, max 15 points
+- Fügt 5 Punkte für jede Anlageklasse mit mindestens 10% Anteil hinzu
+- Maximaler Bonus: 20 Punkte (für alle 5 Anlageklassen)
+- Für ausgewählte, aber noch nicht finanzierte Anlagen: 3 Punkte pro Auswahl, max. 15 Punkte
 
-4. **Adequacy Bonus**:
+4. **Angemessenheitsbonus**:
 ```javascript
-// Investment adequacy relative to expenses
+// Angemessenheit der Investitionen relativ zu den Ausgaben
 const monthlyExpenses = fixeKosten + variableKosten;
-const investmentTarget = monthlyExpenses * 12; // 1 year of expenses
+const investmentTarget = monthlyExpenses * 12; // 1 Jahr Ausgaben
 let adequacyBonus = 0;
 
 if (totalInvestment > 0) {
   adequacyBonus = Math.min(totalInvestment / investmentTarget * 15, 15);
 }
 ```
-- Target: 12 months of total expenses
-- Up to 15 points bonus based on percentage of target achieved
+- Ziel: 12 Monate der Gesamtausgaben
+- Bis zu 15 Punkte Bonus basierend auf dem Prozentsatz des erreichten Ziels
 
-5. **Final Investment Score**:
+5. **Finaler Vermögensanlage Score**:
 ```javascript
-// Calculate final score with all components
+// Berechnung des finalen Scores mit allen Komponenten
 const rawScore = weightedScore - concentrationPenalty + diversificationBonus + adequacyBonus;
 
-// Normalize to 0-100 scale
+// Normalisierung auf 0-100 Skala
 const vermoegensanlageScore = Math.min(Math.max(rawScore, 0), 100);
 ```
-- Combines all components
-- Ensures final score is between 0-100
+- Kombiniert alle Komponenten
+- Stellt sicher, dass der finale Score zwischen 0-100 liegt
 
-#### 3.2 Retirement Planning Score (`altersvorsorge`)
+#### 3.2 Altersvorsorge Score (`altersvorsorge`)
 ```javascript
 const altersvorsorgeAnsprueche = altersvorsorge.gesetzlicheRente + altersvorsorge.betrieblicheRente + altersvorsorge.privateRente;
 const altersvorsorgeScore = Math.min(100, (altersvorsorgeAnsprueche / (fixeKosten + variableKosten)) * 100);
 ```
-- Sums expected monthly retirement income from all sources
-- Score represents percentage of current monthly expenses covered
-- Capped at 100%
+- Summiert das erwartete monatliche Renteneinkommen aus allen Quellen
+- Score entspricht dem Prozentsatz der aktuellen monatlichen Ausgaben, die gedeckt sind
+- Maximaler Wert 100%
 
-#### 3.3 Overall Investment & Asset Base Score
+#### 3.3 Gesamtscore Anlage & Vermögensbasis
 ```javascript
 const anlageVermoegensbasisScore = (
   0.7 * altersvorsorgeScore +
   0.3 * vermoegensanlageScore
 );
 ```
-Weighted average with:
-- Retirement planning: 70%
-- Asset investments: 30%
+Gewichteter Durchschnitt mit:
+- Altersvorsorge: 70%
+- Vermögensanlage: 30%
 
-### 4. Overall Score (Gesamtscore)
+### 4. Gesamtscore
 
 ```javascript
 const gesamtScore = (finanzielleBasisScore + risikoabsicherungScore + anlageVermoegensbasisScore) / 3;
 ```
-- Simple average of the three main pillar scores
+- Einfacher Durchschnitt der drei Hauptsäulen-Scores
 
-## Recommendation Engine
+## Empfehlungsmaschine
 
-The dashboard generates tailored recommendations based on identified weaknesses:
+Das Dashboard generiert maßgeschneiderte Empfehlungen basierend auf identifizierten Schwächen:
 
 ```javascript
 const getRecommendations = () => {
   const recommendations = [];
   
-  // Financial Basis recommendations
+  // Empfehlungen zur finanziellen Basis
   if (scores.notgroschen < 60) {
     recommendations.push({
       category: "Finanzielle Basis",
@@ -363,32 +363,32 @@ const getRecommendations = () => {
     });
   }
   
-  // Additional recommendation logic...
+  // Weitere Empfehlungslogik...
 }
 ```
 
-Recommendations are triggered when specific subscores fall below thresholds and include:
-- Specific action to take
-- Description of why the action is important
-- Categorization by financial pillar
+Empfehlungen werden ausgelöst, wenn bestimmte Teilwerte unter Schwellenwerte fallen und umfassen:
+- Konkrete Handlungsempfehlung
+- Beschreibung, warum die Maßnahme wichtig ist
+- Kategorisierung nach finanzieller Säule
 
-## Contextual Scoring Logic
+## Kontextbezogene Bewertungslogik
 
-The dashboard adapts scoring based on personal circumstances:
-- Insurance requirements differ based on marital status, property ownership, and vehicle ownership
-- Missing insurances that don't apply to the user's situation don't negatively impact their score
-- Investment strategies are evaluated based on diversification, concentration, and adequacy
+Das Dashboard passt die Bewertung an persönliche Umstände an:
+- Versicherungsanforderungen unterscheiden sich je nach Familienstand, Immobilienbesitz und Fahrzeugbesitz
+- Fehlende Versicherungen, die für die Situation des Nutzers nicht relevant sind, wirken sich nicht negativ auf die Bewertung aus
+- Anlagestrategien werden auf Basis von Diversifikation, Konzentration und Angemessenheit bewertet
 
-## Status Color Coding
+## Farbkodierung des Status
 
-The dashboard uses a color-coding system to visually represent score status:
-- Excellent (≥90%): Green
-- Good (≥75%): Light green
-- Average (≥60%): Yellow
-- Poor (≥40%): Orange
-- Critical (<40%): Red
+Das Dashboard verwendet ein Farbkodierungssystem, um den Score-Status visuell darzustellen:
+- Ausgezeichnet (≥90%): Grün
+- Gut (≥75%): Hellgrün
+- Durchschnittlich (≥60%): Gelb
+- Mangelhaft (≥40%): Orange
+- Kritisch (<40%): Rot
 
-Main category scores also use a consistent color scheme for visual identification:
-- Financial Basis: Blue
-- Risk Protection: Green
-- Investment & Asset Base: Yellow
+Hauptkategorie-Scores verwenden ebenfalls ein einheitliches Farbschema zur visuellen Identifikation:
+- Finanzielle Basis: Blau
+- Risikoabsicherung: Grün
+- Anlage & Vermögensbasis: Gelb
