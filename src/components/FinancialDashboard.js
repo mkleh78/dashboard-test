@@ -243,27 +243,18 @@ const FinanzkompassDashboard = () => {
       0.2 * notfallordnerScore
     );
     
-    // 9. Calculate Vermögensanlage Score - REVISED LOGIC WITH DOCUMENTATION
+    // 9. Calculate Vermögensanlage Score - NEW SIMPLIFIED LOGIC
     /* 
-     * Investment Score Calculation Explanation:
+     * New Investment Score Calculation:
      * 
-     * Step 1: Calculate total investment across all asset classes
-     * Step 2: Calculate percentage allocation for each asset class
-     * Step 3: Assign base scores to each asset class based on:
-     *   - Expected returns (higher for stocks, lower for bank deposits)
-     *   - Risk characteristics (more risk = higher potential score)
-     *   - Liquidity (consideration in the overall scoring)
-     * Step 4: Calculate weighted score based on asset allocation
-     * Step 5: Apply modifiers:
-     *   - Concentration penalty for over-concentration (>70%) in any one asset class
-     *   - Diversification bonus for having multiple asset classes (at least 10% each)
-     *   - Adequacy bonus for having sufficient total investments
+     * The score is based on two key factors:
+     * 1. Diversification (30% of total score)
+     *    - Measures how well the portfolio is diversified across asset classes
+     *    - Perfect score requires at least 4 asset classes with min 10% allocation each
      * 
-     * Alternative calculation approach (implemented below):
-     * - Adjusts base scores based on age-appropriate allocations
-     * - Considers risk-adjusted returns more carefully
-     * - Better rewards appropriate diversification
-     * - Incorporates lifecycle investing principles
+     * 2. Coverage Adequacy (70% of total score)
+     *    - Measures if the total investment covers 5 years of expenses
+     *    - 100% score when investments = 5 years of monthly expenses
      */
     
     // Calculate total investment
@@ -283,100 +274,36 @@ const FinanzkompassDashboard = () => {
       bankeinlagen: (vermoegenAnlage.bankeinlagen ? vermoegenAnlage.bankeinlagenBetrag || 0 : 0) / totalInvestment
     };
     
-    // Age factor for asset allocation adjustment (0 = young, 1 = retirement age)
+    // Years to retirement (for documentation, not used in this calculation)
     const yearsToRetirement = 67 - alter;
-    const ageFactor = Math.max(0, Math.min(1, 1 - (yearsToRetirement / 40))); // Scale from 0 to 1
     
-    // Age-adjusted base scores - younger = more stocks; older = more bonds/safety
-    const baseScores = {
-      aktienEtfs: 60 - (ageFactor * 20), // Reduce equity score as age increases
-      immobilien: 40,
-      anleihen: 25 + (ageFactor * 20), // Increase bond score as age increases
-      versicherungen: 15 + (ageFactor * 10), // Slight increase in insurance as age increases
-      bankeinlagen: 15 + (ageFactor * 5) // Slight increase in bank deposits as age increases
-    };
-    
-    // Ideal allocation by age
-    const idealAllocation = {
-      aktienEtfs: Math.max(0.2, 0.8 - (ageFactor * 0.6)), // 80% to 20% stocks based on age
-      immobilien: 0.2, // Constant 20% real estate
-      anleihen: Math.min(0.5, 0.1 + (ageFactor * 0.4)), // 10% to 50% bonds based on age
-      versicherungen: Math.min(0.3, 0.05 + (ageFactor * 0.15)), // 5% to 20% insurance based on age
-      bankeinlagen: Math.min(0.2, 0.05 + (ageFactor * 0.05)) // 5% to 10% cash based on age
-    };
-    
-    // Calculate weighted score based on actual percentages
-    let weightedScore = 0;
-    // Track deviation from ideal allocation
-    let totalDeviationPenalty = 0;
-    
+    // 1. Calculate diversification score (30% of the total score)
+    let diversificationScore = 0;
     if (percentages) {
-      // Calculate weighted score using base scores
-      Object.keys(percentages).forEach(assetClass => {
-        if (percentages[assetClass] > 0) {
-          weightedScore += baseScores[assetClass] * percentages[assetClass];
-          
-          // Calculate deviation from ideal allocation
-          const deviation = Math.abs(percentages[assetClass] - idealAllocation[assetClass]);
-          // Add penalty for deviation (more penalty for higher deviations)
-          totalDeviationPenalty += deviation * 25; // Up to 25% penalty for complete deviation
-        }
-      });
-    } else {
-      // If no investments, check which types are selected and add a basic score
-      if (vermoegenAnlage.aktienEtfs) weightedScore += baseScores.aktienEtfs * 0.1;
-      if (vermoegenAnlage.immobilien) weightedScore += baseScores.immobilien * 0.1;
-      if (vermoegenAnlage.anleihen) weightedScore += baseScores.anleihen * 0.1;
-      if (vermoegenAnlage.versicherungen) weightedScore += baseScores.versicherungen * 0.1;
-      if (vermoegenAnlage.bankeinlagen) weightedScore += baseScores.bankeinlagen * 0.1;
-    }
-    
-    // Calculate concentration penalty
-    let concentrationPenalty = 0;
-    if (percentages) {
-      Object.keys(percentages).forEach(assetClass => {
-        if (percentages[assetClass] > 0.7) {
-          concentrationPenalty += (percentages[assetClass] - 0.7) * 30; // Up to 9% penalty for 100% concentration
-        }
-      });
-    }
-    
-    // Calculate diversification bonus
-    let diversificationBonus = 0;
-    if (percentages) {
+      // Count asset classes with at least 10% allocation
       const diversifiedClasses = Object.keys(percentages).filter(assetClass => 
         percentages[assetClass] >= 0.1
       ).length;
       
-      diversificationBonus = Math.min(diversifiedClasses * 5, 20); // Up to 20% bonus for having all 5 asset classes
+      // Maximum score with 4 or more asset classes with at least 10% each
+      diversificationScore = Math.min(100, diversifiedClasses * 25);
     } else {
-      // Count selected asset classes if no investments yet
-      let selectedCount = 0;
-      if (vermoegenAnlage.aktienEtfs) selectedCount++;
-      if (vermoegenAnlage.immobilien) selectedCount++;
-      if (vermoegenAnlage.anleihen) selectedCount++;
-      if (vermoegenAnlage.versicherungen) selectedCount++;
-      if (vermoegenAnlage.bankeinlagen) selectedCount++;
-      
-      diversificationBonus = Math.min(selectedCount * 3, 15); // Up to 15% bonus for selection
+      // If no investments yet
+      diversificationScore = 0;
     }
     
-    // Investment adequacy relative to income/expenses and age
+    // 2. Calculate coverage score (70% of the total score)
+    // Target: 5 years of expenses
     const monthlyExpenses = fixeKosten + variableKosten;
-    // Target should increase as you get closer to retirement
-    const yearsMultiplier = Math.max(1, 2 + (ageFactor * 8)); // 2 years of expenses when young, up to 10 when older
-    const investmentTarget = monthlyExpenses * 12 * yearsMultiplier;
+    const coverageTarget = monthlyExpenses * 12 * 5; // 5 years of expenses
     
-    let adequacyBonus = 0;
+    let coverageScore = 0;
     if (totalInvestment > 0) {
-      adequacyBonus = Math.min(totalInvestment / investmentTarget * 15, 15); // Up to 15% bonus
+      coverageScore = Math.min(100, (totalInvestment / coverageTarget) * 100);
     }
     
-    // Calculate final score with all components
-    const rawScore = weightedScore - concentrationPenalty + diversificationBonus + adequacyBonus - totalDeviationPenalty;
-    
-    // Normalize to 0-100 scale
-    const vermoegensanlageScore = Math.min(Math.max(rawScore, 0), 100);
+    // Calculate final score with proper weighting
+    const vermoegensanlageScore = (0.3 * diversificationScore) + (0.7 * coverageScore);
     
     // 10. Calculate Altersvorsorge Score - UPDATED WITH INFLATION
     // Consider retirement at age 67 and 2% annual inflation
@@ -392,10 +319,10 @@ const FinanzkompassDashboard = () => {
     // Score based on 80% replacement ratio being ideal (100% score)
     const altersvorsorgeScore = Math.min(100, (replacementRatio / 0.8) * 100);
     
-    // 11. Calculate Anlage & Vermögensbasis Score
+    // 11. Calculate Anlage & Vermögensbasis Score - UPDATED WEIGHTING
     const anlageVermoegensbasisScore = (
-      0.7 * altersvorsorgeScore +
-      0.3 * vermoegensanlageScore
+      0.5 * altersvorsorgeScore +  // Changed from 0.7 to 0.5
+      0.5 * vermoegensanlageScore  // Changed from 0.3 to 0.5
     );
     
     // 12. Calculate Gesamtscore
@@ -1352,7 +1279,7 @@ const FinanzkompassDashboard = () => {
       </div>
       
       <footer className="mt-6 sm:mt-8 text-center text-gray-400 text-xs sm:text-sm">
-        <p>© 2025 House of Finance & Tech Berlin // entwickelt von Markus Lehleiter</p>
+        <p>© 2025 Roland Berger & House of Finance & Tech Berlin // Feedback bitte an markus.lehleiter@hoft.berlin</p>
       </footer>
     </div>
   );
