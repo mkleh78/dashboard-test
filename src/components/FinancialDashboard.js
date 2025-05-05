@@ -123,12 +123,13 @@ const FinanzkompassDashboard = () => {
     const { einkommen, fixeKosten, variableKosten, notgroschen, dispoKredite, ratenKredite,
             versicherungen, notfallordner, vermoegenAnlage, altersvorsorge,
             // NEW: personal data 
-            alleinstehend, immobilie, auto } = data;
+            alter, alleinstehend, immobilie, auto } = data;
     
-    // 1. Calculate Sparquote Score
+    // 1. Calculate Sparquote Score - UPDATED LOGIC
     const monatUeberschuss = einkommen - fixeKosten - variableKosten;
     const sparquote = monatUeberschuss / einkommen;
-    const sparquoteScore = Math.min(1, Math.max(0, sparquote)) * 100;
+    // Now 20% savings rate or higher gives 100% score, scaling proportionally between 0-20%
+    const sparquoteScore = Math.min(100, Math.max(0, (sparquote / 0.2) * 100));
     
     // 2. Calculate Notgroschen Score
     const monatsausgaben = fixeKosten + variableKosten;
@@ -242,7 +243,29 @@ const FinanzkompassDashboard = () => {
       0.2 * notfallordnerScore
     );
     
-    // 9. Calculate Vermögensanlage Score - IMPROVED LOGIC
+    // 9. Calculate Vermögensanlage Score - REVISED LOGIC WITH DOCUMENTATION
+    /* 
+     * Investment Score Calculation Explanation:
+     * 
+     * Step 1: Calculate total investment across all asset classes
+     * Step 2: Calculate percentage allocation for each asset class
+     * Step 3: Assign base scores to each asset class based on:
+     *   - Expected returns (higher for stocks, lower for bank deposits)
+     *   - Risk characteristics (more risk = higher potential score)
+     *   - Liquidity (consideration in the overall scoring)
+     * Step 4: Calculate weighted score based on asset allocation
+     * Step 5: Apply modifiers:
+     *   - Concentration penalty for over-concentration (>70%) in any one asset class
+     *   - Diversification bonus for having multiple asset classes (at least 10% each)
+     *   - Adequacy bonus for having sufficient total investments
+     * 
+     * Alternative calculation approach (implemented below):
+     * - Adjusts base scores based on age-appropriate allocations
+     * - Considers risk-adjusted returns more carefully
+     * - Better rewards appropriate diversification
+     * - Incorporates lifecycle investing principles
+     */
+    
     // Calculate total investment
     const totalInvestment = 
       (vermoegenAnlage.aktienEtfs ? vermoegenAnlage.aktienEtfsBetrag || 0 : 0) +
@@ -260,21 +283,43 @@ const FinanzkompassDashboard = () => {
       bankeinlagen: (vermoegenAnlage.bankeinlagen ? vermoegenAnlage.bankeinlagenBetrag || 0 : 0) / totalInvestment
     };
     
-    // Base scores for each asset class
+    // Age factor for asset allocation adjustment (0 = young, 1 = retirement age)
+    const yearsToRetirement = 67 - alter;
+    const ageFactor = Math.max(0, Math.min(1, 1 - (yearsToRetirement / 40))); // Scale from 0 to 1
+    
+    // Age-adjusted base scores - younger = more stocks; older = more bonds/safety
     const baseScores = {
-      aktienEtfs: 60,
+      aktienEtfs: 60 - (ageFactor * 20), // Reduce equity score as age increases
       immobilien: 40,
-      anleihen: 25,
-      versicherungen: 15,
-      bankeinlagen: 15
+      anleihen: 25 + (ageFactor * 20), // Increase bond score as age increases
+      versicherungen: 15 + (ageFactor * 10), // Slight increase in insurance as age increases
+      bankeinlagen: 15 + (ageFactor * 5) // Slight increase in bank deposits as age increases
+    };
+    
+    // Ideal allocation by age
+    const idealAllocation = {
+      aktienEtfs: Math.max(0.2, 0.8 - (ageFactor * 0.6)), // 80% to 20% stocks based on age
+      immobilien: 0.2, // Constant 20% real estate
+      anleihen: Math.min(0.5, 0.1 + (ageFactor * 0.4)), // 10% to 50% bonds based on age
+      versicherungen: Math.min(0.3, 0.05 + (ageFactor * 0.15)), // 5% to 20% insurance based on age
+      bankeinlagen: Math.min(0.2, 0.05 + (ageFactor * 0.05)) // 5% to 10% cash based on age
     };
     
     // Calculate weighted score based on actual percentages
     let weightedScore = 0;
+    // Track deviation from ideal allocation
+    let totalDeviationPenalty = 0;
+    
     if (percentages) {
+      // Calculate weighted score using base scores
       Object.keys(percentages).forEach(assetClass => {
         if (percentages[assetClass] > 0) {
           weightedScore += baseScores[assetClass] * percentages[assetClass];
+          
+          // Calculate deviation from ideal allocation
+          const deviation = Math.abs(percentages[assetClass] - idealAllocation[assetClass]);
+          // Add penalty for deviation (more penalty for higher deviations)
+          totalDeviationPenalty += deviation * 25; // Up to 25% penalty for complete deviation
         }
       });
     } else {
@@ -316,24 +361,36 @@ const FinanzkompassDashboard = () => {
       diversificationBonus = Math.min(selectedCount * 3, 15); // Up to 15% bonus for selection
     }
     
-    // Investment adequacy relative to income/expenses
+    // Investment adequacy relative to income/expenses and age
     const monthlyExpenses = fixeKosten + variableKosten;
-    const investmentTarget = monthlyExpenses * 12; // 1 year of expenses
-    let adequacyBonus = 0;
+    // Target should increase as you get closer to retirement
+    const yearsMultiplier = Math.max(1, 2 + (ageFactor * 8)); // 2 years of expenses when young, up to 10 when older
+    const investmentTarget = monthlyExpenses * 12 * yearsMultiplier;
     
+    let adequacyBonus = 0;
     if (totalInvestment > 0) {
       adequacyBonus = Math.min(totalInvestment / investmentTarget * 15, 15); // Up to 15% bonus
     }
     
     // Calculate final score with all components
-    const rawScore = weightedScore - concentrationPenalty + diversificationBonus + adequacyBonus;
+    const rawScore = weightedScore - concentrationPenalty + diversificationBonus + adequacyBonus - totalDeviationPenalty;
     
     // Normalize to 0-100 scale
     const vermoegensanlageScore = Math.min(Math.max(rawScore, 0), 100);
     
-    // 10. Calculate Altersvorsorge Score
+    // 10. Calculate Altersvorsorge Score - UPDATED WITH INFLATION
+    // Consider retirement at age 67 and 2% annual inflation
+    const inflationFactor = Math.pow(1.02, yearsToRetirement); // 2% inflation compounded yearly
     const altersvorsorgeAnsprueche = altersvorsorge.gesetzlicheRente + altersvorsorge.betrieblicheRente + altersvorsorge.privateRente;
-    const altersvorsorgeScore = Math.min(100, (altersvorsorgeAnsprueche / (fixeKosten + variableKosten)) * 100);
+    
+    // Future expenses adjusted for inflation
+    const futureMonthlyExpenses = (fixeKosten + variableKosten) * inflationFactor;
+    
+    // Calculate replacement ratio (pension income as % of expenses)
+    const replacementRatio = altersvorsorgeAnsprueche / futureMonthlyExpenses;
+    
+    // Score based on 80% replacement ratio being ideal (100% score)
+    const altersvorsorgeScore = Math.min(100, (replacementRatio / 0.8) * 100);
     
     // 11. Calculate Anlage & Vermögensbasis Score
     const anlageVermoegensbasisScore = (
@@ -1214,46 +1271,49 @@ const FinanzkompassDashboard = () => {
         </div>
       </div>
       
-      {/* Category Details */}
+      {/* Category Details - UPDATED FOR MOBILE RESPONSIVENESS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div className="bg-gray-800 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 col-span-1 lg:col-span-3">
           <h2 className="text-lg sm:text-xl font-semibold mb-4">Detailanalyse</h2>
-          <div className="h-64 sm:h-300 overflow-x-auto">
-            <ResponsiveContainer width="100%" height={300} minWidth={600}>
-              <BarChart
-                data={detailData}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#555" />
-                <XAxis type="number" domain={[0, 100]} tick={{ fill: '#ccc' }} />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  tick={(props) => {
-                    const { x, y, payload } = props;
-                    const item = detailData.find(d => d.name === payload.value);
-                    const textColor = item ? item.color : '#ccc';
-                    return (
-                      <text x={x} y={y} dy={4} textAnchor="end" fill={textColor} fontSize={12}>
-                        {payload.value}
-                      </text>
-                    );
-                  }}
-                  width={120} 
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#333', border: 'none' }}
-                  formatter={(value) => [`${Math.round(value)}%`, 'Score']}
-                  labelStyle={{ color: '#fff' }}
-                />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {detailData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-full" style={{ minHeight: '300px' }}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={detailData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#555" />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: '#ccc' }} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    tick={(props) => {
+                      const { x, y, payload } = props;
+                      const item = detailData.find(d => d.name === payload.value);
+                      const textColor = item ? item.color : '#ccc';
+                      return (
+                        <text x={x} y={y} dy={4} textAnchor="end" fill={textColor} fontSize={12}>
+                          {payload.value}
+                        </text>
+                      );
+                    }}
+                    width={120} 
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#333', border: 'none' }}
+                    formatter={(value) => [`${Math.round(value)}%`, 'Score']}
+                    labelStyle={{ color: '#fff' }}
+                    itemStyle={{ color: '#fff' }} // ADDED: White text for scores
+                  />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    {detailData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
@@ -1292,7 +1352,7 @@ const FinanzkompassDashboard = () => {
       </div>
       
       <footer className="mt-6 sm:mt-8 text-center text-gray-400 text-xs sm:text-sm">
-        <p>© 2025 Financial Wellbeing Dashboard</p>
+        <p>© 2025 House of Finance & Tech Berlin // entwickelt von Markus Lehleiter</p>
       </footer>
     </div>
   );
